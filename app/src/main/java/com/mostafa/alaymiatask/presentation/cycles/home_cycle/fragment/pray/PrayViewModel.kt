@@ -5,12 +5,11 @@ import android.content.Context
 import android.location.Geocoder
 import android.location.Location
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -85,6 +84,7 @@ class PrayViewModel @Inject constructor(
 
     var city: String? = null
 
+
     init {
 
         updateCurrentDate()
@@ -92,6 +92,7 @@ class PrayViewModel @Inject constructor(
             dataStore?.data?.firstOrNull()?.let { preferences ->
                 city = preferences[CITY]
             }
+
         }
     }
 
@@ -235,10 +236,6 @@ class PrayViewModel @Inject constructor(
     }
 
 
-
-
-
-
     fun getLocationAddress(context: Context, latitude: Double, longitude: Double) {
         viewModelScope.launch {
             Geocoder(context.applicationContext, Locale.getDefault()).apply {
@@ -267,5 +264,6 @@ class PrayViewModel @Inject constructor(
         val LATITUDE = doublePreferencesKey("latitude")
         val LONGITUDE = doublePreferencesKey("longitude")
         val CITY = stringPreferencesKey("city")
+
     }
 }

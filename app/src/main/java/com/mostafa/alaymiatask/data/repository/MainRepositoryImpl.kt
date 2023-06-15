@@ -77,7 +77,7 @@ class MainRepositoryImpl @Inject constructor(
         } else {
 
             return flow {
-                if (cachedData.data!!.isNotEmpty()) {
+                if (cachedData != null && cachedData.data != null && cachedData.data!!.isNotEmpty()) {
                     emit(
                         NetworkResponse.Success(
                             AladhanResponseDTO(

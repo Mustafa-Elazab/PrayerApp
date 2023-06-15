@@ -2,6 +2,7 @@ package com.mostafa.alaymiatask.presentation.cycles.home_cycle.activity
 
 import android.Manifest
 import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -34,6 +35,11 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
     private val viewModel: PrayViewModel by viewModels()
 
+
+    private val locationManager: LocationManager by lazy {
+        getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    }
+
     @Inject
     lateinit var networkUtils: NetworkUtils
 
@@ -52,6 +58,7 @@ class HomeActivity : AppCompatActivity() {
 
             if (isGranted) {
                 checkGpsStatus()
+
             } else {
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
                     provideExplainPermissionDialog().show()
@@ -62,8 +69,6 @@ class HomeActivity : AppCompatActivity() {
 
 
     private fun checkGpsStatus() {
-        val locationManager =
-            getSystemService(LOCATION_SERVICE) as LocationManager
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             lifecycleScope.launch {
                 viewModel.getCurrentLocation().let { location ->
@@ -142,23 +147,33 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        checkGpsStatus()
-        Log.d(TAG, "onResume")
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            lifecycleScope.launch {
+                viewModel.getCurrentLocation().let { location ->
+                    if (location != null) {
+                        viewModel.fetchPrayTime(
+                            latitude = location.latitude,
+                            longitude = location.longitude
+                        )
+                        if (networkUtils.isNetworkConnected()) {
+                            viewModel.getLocationAddress(
+                                this@HomeActivity,
+                                latitude = location.latitude,
+                                longitude = location.longitude
+                            )
+                        }
+                    } else {
+                        Log.d(TAG, "checkGpsStatus: Faild To Getting Location")
+                    }
+
+                }
+            }
+        } else {
+            showAlertOpenGps()
+        }
+
+
     }
 
-    override fun onPause() {
-        super.onPause()
-        Log.d(TAG, "onPause")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        Log.d(TAG, "onStop")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "onDestroy")
-    }
 
 }

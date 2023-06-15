@@ -55,16 +55,6 @@
                 app:layout_constraintStart_toStartOf="@+id/txt_not_connected"
                 app:layout_constraintTop_toBottomOf="@+id/txt_not_connected" />
 
-            <Button
-                android:id="@+id/btn_retry_internet"
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_marginTop="@dimen/_20sdp"
-                android:text="@string/retry"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="@+id/txt_not_connected_details"
-                app:layout_constraintStart_toStartOf="@+id/txt_not_connected_details"
-                app:layout_constraintTop_toBottomOf="@+id/txt_not_connected_details" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

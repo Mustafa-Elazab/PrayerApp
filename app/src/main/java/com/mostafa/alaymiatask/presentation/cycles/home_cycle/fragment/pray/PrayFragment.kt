@@ -2,7 +2,6 @@ package com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.pray
 
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -131,11 +130,12 @@ class PrayFragment : BaseFragment<FragmentPrayBinding>(R.layout.fragment_pray) {
                     }
 
                     is NetworkResponse.NetworkError -> {
-                        Toast.makeText(
-                            requireContext(),
-                            it.error.message.toString(),
-                            Toast.LENGTH_LONG
-                        ).show()
+                        binding.lytNotConnected.visibility = View.VISIBLE
+//                        Toast.makeText(
+//                            requireContext(),
+//                            it.error.message.toString(),
+//                            Toast.LENGTH_LONG
+//                        ).show()
                         binding.shimmerLayout.stopShimmer()
                     }
 
@@ -216,6 +216,5 @@ class PrayFragment : BaseFragment<FragmentPrayBinding>(R.layout.fragment_pray) {
         }
 
     }
-
 
 }

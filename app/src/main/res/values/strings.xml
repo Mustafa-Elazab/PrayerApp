@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">PrayerApp</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="retry">Retry</string>
+    <string name="unknown_error_occurred">An Unknown Error occured</string>
+    <string name="not_connected_internet">You need to be online for first time visit</string>
+    <string name="not_connected_internet_error">You are not connected, your news will be refreshed when you are online</string>
+    <string name="try_again">Try Again</string>
+    <string name="not_connected">Not Connected</string>
+    <string name="need_to_be_online">You need to be online for first time visit</string>
+    <string name="cancel_dialog">Cancel</string>
+    <string name="text_too_many_request_error">For some weird reasons, your request cannot be made :(</string>
+    <string name="enableGPS">"Enable Gps "</string>
+    <string name="enable">Enable</string>
+    <string name="google_maps_key">AIzaSyDeHImLJKSBAAjXcleYtxpT_RBBOUXRtLI</string>
+    <string name="go_to_settings">Go To Settings</string>
+    <string name="location_permission_attention">This app needs the Location permission, please accept to use location functionality</string>
+    <string name="location_title">Location Permission Needed</string>
+</resources>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/home_nav"
+    app:startDestination="@id/prayFragment">
+
+    <fragment
+        android:id="@+id/prayFragment"
+        android:name="com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.pray.PrayFragment"
+        android:label="ApiFragment"
+        tools:layout="@layout/fragment_pray">
+        <action
+            android:id="@+id/action_prayFragment_to_qiblaFragment"
+            app:destination="@id/qiblaFragment"
+            app:enterAnim="@anim/slide_in_bottom"
+            app:exitAnim="@anim/slide_out_top"
+            app:popEnterAnim="@anim/slide_in_top"
+            app:popExitAnim="@anim/slide_out_bottom" />
+    </fragment>
+    <fragment
+        android:id="@+id/qiblaFragment"
+        android:name="com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.qibla.QiblaFragment"
+        android:label="MapFragment"
+        tools:layout="@layout/fragment_qibla" />
+</navigation>

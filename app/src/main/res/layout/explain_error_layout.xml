@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/lyt_not_connected"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/img_no_network"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_no_internet"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/txt_not_connected"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10sp"
+            android:text="@string/not_connected"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="@+id/img_no_network"
+            app:layout_constraintStart_toStartOf="@+id/img_no_network"
+            app:layout_constraintTop_toBottomOf="@+id/img_no_network" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/txt_not_connected_details"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/not_connected_internet"
+            app:layout_constraintEnd_toEndOf="@+id/txt_not_connected"
+            app:layout_constraintStart_toStartOf="@+id/txt_not_connected"
+            app:layout_constraintTop_toBottomOf="@+id/txt_not_connected" />
+
+        <Button
+            android:id="@+id/btn_retry_internet"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="@dimen/_20sdp"
+            android:text="@string/retry"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="@+id/txt_not_connected_details"
+            app:layout_constraintStart_toStartOf="@+id/txt_not_connected_details"
+            app:layout_constraintTop_toBottomOf="@+id/txt_not_connected_details" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

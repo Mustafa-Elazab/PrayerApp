@@ -5,6 +5,8 @@ import android.content.Context
 import android.location.Geocoder
 import android.location.Location
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.datastore.core.DataStore
@@ -213,18 +215,28 @@ class PrayViewModel @Inject constructor(
                     }
                     return@suspendCancellableCoroutine
                 }
-                addOnSuccessListener {
-                    cont.resume(it)
+                addOnSuccessListener { location ->
+                    cont.resume(location)
                 }
                 addOnCanceledListener {
                     cont.cancel()
                 }
-                addOnFailureListener {
-                    cont.resume(null)
+                addOnFailureListener { exception ->
+                    // Retry getting the location after a delay
+                    viewModelScope.launch {
+                        delay(2000) // Adjust the delay as needed
+                        getCurrentLocation().let { location ->
+                            cont.resume(location)
+                        }
+                    }
                 }
             }
         }
     }
+
+
+
+
 
 
     fun getLocationAddress(context: Context, latitude: Double, longitude: Double) {

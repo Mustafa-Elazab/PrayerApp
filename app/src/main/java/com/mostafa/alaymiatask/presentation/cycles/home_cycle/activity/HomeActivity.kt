@@ -9,6 +9,7 @@ import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,7 +25,8 @@ import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.api.PrayV
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
+
+const val TAG = "HomeActivity"
 
 @AndroidEntryPoint
 class HomeActivity : AppCompatActivity() {
@@ -40,7 +42,22 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
+        permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) {
+            var isGranted = true
+            for (key in it.keys) {
+                isGranted = isGranted && it[key]!!
+            }
 
+            if (isGranted) {
+                checkGpsStatus()
+            } else {
+                if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    provideExplainPermissionDialog().show()
+                }
+            }
+        }
     }
 
 
@@ -50,17 +67,22 @@ class HomeActivity : AppCompatActivity() {
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             lifecycleScope.launch {
                 viewModel.getCurrentLocation().let { location ->
-                    viewModel.fetchPrayTime(
-                        latitude = location!!.latitude,
-                        longitude = location.longitude
-                    )
-                    if (networkUtils.isNetworkConnected()) {
-                        viewModel.getLocationAddress(
-                            this@HomeActivity,
+                    if (location != null) {
+                        viewModel.fetchPrayTime(
                             latitude = location.latitude,
                             longitude = location.longitude
                         )
+                        if (networkUtils.isNetworkConnected()) {
+                            viewModel.getLocationAddress(
+                                this@HomeActivity,
+                                latitude = location.latitude,
+                                longitude = location.longitude
+                            )
+                        }
+                    } else {
+                        Log.d(TAG, "checkGpsStatus: Faild To Getting Location")
                     }
+
                 }
             }
         } else {
@@ -79,14 +101,9 @@ class HomeActivity : AppCompatActivity() {
                 val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                 startActivity(intent)
             }
-            .setNegativeButton("Exit") { dialog, _ ->
-                finishAffinity()
-            }
             .setCancelable(false)
             .create().show()
     }
-
-
 
 
     private fun provideExplainPermissionDialog(): Dialog {
@@ -112,22 +129,7 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) {
-            var isGranted = true
-            for (key in it.keys) {
-                isGranted = isGranted && it[key]!!
-            }
 
-            if (isGranted) {
-                checkGpsStatus()
-            } else {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    provideExplainPermissionDialog().show()
-                }
-            }
-        }
         permissionLauncher.launch(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -135,6 +137,28 @@ class HomeActivity : AppCompatActivity() {
             )
         )
 
+    }
+
+
+    override fun onResume() {
+        super.onResume()
+        checkGpsStatus()
+        Log.d(TAG, "onResume")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "onPause")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d(TAG, "onStop")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy")
     }
 
 }

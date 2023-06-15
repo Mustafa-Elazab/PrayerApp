@@ -169,7 +169,7 @@ class QiblaFragment : BaseFragment<FragmentQiblaBinding>(R.layout.fragment_qibla
                     viewModel.addOrUpdateUserMarker(userLng, mGoogleMap)
                 }else{
                     delay(5000)
-                    Log.d(TAG, "checkGpsStatus: Location is null")
+                    Log.d(TAG, "Location is null")
                 }
             }
 

@@ -1,7 +1,9 @@
 package com.mostafa.alaymiatask.di
 
 
+import com.mostafa.alaymiatask.data.repository.LocationRepositoryImpl
 import com.mostafa.alaymiatask.data.repository.MainRepositoryImpl
+import com.mostafa.alaymiatask.domain.repository.LocationRepository
 import com.mostafa.alaymiatask.domain.repository.MainRepository
 import dagger.Binds
 import dagger.Module
@@ -15,5 +17,8 @@ abstract class RepositoryModule {
     @Binds
     abstract fun bindMainRepository(repository: MainRepositoryImpl): MainRepository
 
+
+    @Binds
+    abstract fun bindLocationRepository(repository: LocationRepositoryImpl): LocationRepository
 
 }

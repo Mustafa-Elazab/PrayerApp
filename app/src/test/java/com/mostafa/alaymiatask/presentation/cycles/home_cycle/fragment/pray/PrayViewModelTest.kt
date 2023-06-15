@@ -6,7 +6,6 @@ import com.mostafa.alaymiatask.data.remote.dto.AladhanResponseDTO
 import com.mostafa.alaymiatask.data.remote.response.NetworkResponse
 import com.mostafa.alaymiatask.domain.repository.MainRepository
 import com.mostafa.alaymiatask.domain.usecase.GetPrayTimeUseCase
-import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.api.PrayViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.single
@@ -19,8 +18,6 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.junit.MockitoJUnitRunner
-import org.powermock.core.classloader.annotations.PrepareForTest
-import org.powermock.modules.junit4.PowerMockRunner
 
 
 @RunWith(MockitoJUnitRunner::class)

@@ -15,7 +15,6 @@ import com.mostafa.alaymiatask.di.NetworkUtils
 import com.mostafa.alaymiatask.domain.model.PrayerTime
 import com.mostafa.alaymiatask.presentation.base.BaseFragment
 import com.mostafa.alaymiatask.presentation.cycles.home_cycle.adapter.PrayerAdapter
-import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.api.PrayViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch

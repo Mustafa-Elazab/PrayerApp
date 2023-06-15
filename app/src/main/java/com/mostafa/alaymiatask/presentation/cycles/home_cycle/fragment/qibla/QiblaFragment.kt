@@ -25,9 +25,11 @@ import com.mostafa.alaymiatask.data.remote.response.NetworkResponse
 import com.mostafa.alaymiatask.databinding.FragmentQiblaBinding
 import com.mostafa.alaymiatask.di.NetworkUtils
 import com.mostafa.alaymiatask.presentation.base.BaseFragment
-import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.api.PrayViewModel
+import com.mostafa.alaymiatask.presentation.cycles.home_cycle.activity.TAG
+import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.pray.PrayViewModel
 import com.mostafa.alaymiatask.utils.bitmapDescriptorFromVector
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -154,17 +156,23 @@ class QiblaFragment : BaseFragment<FragmentQiblaBinding>(R.layout.fragment_qibla
 
     private fun createUserLocationMarker() {
         lifecycleScope.launch {
-            prayViewModel.getCurrentLocation().let {
-                var userLng = LatLng(it!!.latitude, it.longitude)
-                viewModel.getQiblaDirection(userLng)
-                mGoogleMap.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(
-                        userLng,
-                        4f
+            prayViewModel.locationStateFlow.collectLatest { location ->
+                if (location != null) {
+                    var userLng = LatLng(location!!.latitude, location.longitude)
+                    viewModel.getQiblaDirection(userLng)
+                    mGoogleMap.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            userLng,
+                            4f
+                        )
                     )
-                )
-                viewModel.addOrUpdateUserMarker(userLng, mGoogleMap)
+                    viewModel.addOrUpdateUserMarker(userLng, mGoogleMap)
+                }else{
+                    delay(5000)
+                    Log.d(TAG, "checkGpsStatus: Location is null")
+                }
             }
+
         }
     }
 
@@ -184,7 +192,6 @@ class QiblaFragment : BaseFragment<FragmentQiblaBinding>(R.layout.fragment_qibla
         binding.mapView.onStart()
 
     }
-
 
 
     private fun startSensor() {

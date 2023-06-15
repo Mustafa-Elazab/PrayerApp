@@ -19,16 +19,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatImageView
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.mostafa.alaymiatask.R
 import com.mostafa.alaymiatask.di.NetworkUtils
-import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.api.PrayViewModel
+import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.pray.PrayViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -53,6 +50,11 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
+
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && networkUtils.isNetworkConnected()) {
+            viewModel.reloadLocation()
+        }
+
         permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
         ) {
@@ -63,6 +65,7 @@ class HomeActivity : AppCompatActivity() {
 
             if (isGranted) {
                 if (networkUtils.isNetworkConnected()) {
+
                     checkGpsStatus()
                 } else {
                     lifecycleScope.launch {
@@ -82,59 +85,22 @@ class HomeActivity : AppCompatActivity() {
     }
 
 
-//    private fun checkGpsStatus()
-//    {
-//        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-//            lifecycleScope.launch {
-//                repeatOnLifecycle(Lifecycle.State.STARTED) {
-//                    while (isActive) {
-//                        viewModel.getCurrentLocation().let { location ->
-//                            if (location != null) {
-//                                viewModel.fetchPrayTime(
-//                                    latitude = location.latitude,
-//                                    longitude = location.longitude
-//                                )
-//
-//                                viewModel.getLocationAddress(
-//                                    this@HomeActivity,
-//                                    latitude = location.latitude,
-//                                    longitude = location.longitude
-//                                )
-//
-//                            } else {
-//                                delay(5000)
-//                                Log.d(TAG, "checkGpsStatus: $location")
-//                            }
-//
-//                        }
-//                    }
-//
-//                }
-//            }
-//        } else {
-//            buildAlertMessageNoGps()
-//        }
-//
-//
-//    }
-
     private fun checkGpsStatus() {
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             lifecycleScope.launchWhenResumed {
-                while (isActive) {
-                    viewModel.getCurrentLocation()?.let { location ->
+                viewModel.getCurrentLocation()
+                viewModel.locationStateFlow.collectLatest { location ->
+                    if (location != null) {
                         viewModel.fetchPrayTime(
-                            latitude = location.latitude,
+                            latitude = location!!.latitude,
                             longitude = location.longitude
                         )
-
                         viewModel.getLocationAddress(
                             this@HomeActivity,
                             latitude = location.latitude,
                             longitude = location.longitude
                         )
-
-                    } ?: run {
+                    } else {
                         delay(5000)
                         Log.d(TAG, "checkGpsStatus: Location is null")
                     }
@@ -156,22 +122,6 @@ class HomeActivity : AppCompatActivity() {
             }
         val alert: AlertDialog = builder.create()
         alert.show()
-    }
-
-
-    private fun showAlertOpenGps() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("GPS is disabled")
-            .setMessage("Please enable GPS to get your location")
-            .setIcon(R.drawable.ic_location)
-            .setCancelable(false)
-            .setPositiveButton(R.string.enable) { dialog, _ ->
-                dialog.dismiss()
-                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivity(intent)
-            }
-            .setCancelable(false)
-            .create().show()
     }
 
 

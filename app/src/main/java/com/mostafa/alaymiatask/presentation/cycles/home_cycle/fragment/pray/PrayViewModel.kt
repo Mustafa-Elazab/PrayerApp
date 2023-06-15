@@ -1,11 +1,10 @@
-package com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.api
+package com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.pray
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
 import android.location.Location
 import android.os.Build
-import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.datastore.core.DataStore
@@ -16,14 +15,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationAvailability
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
 import com.mostafa.alaymiatask.data.remote.dto.AladhanResponseDTO
 import com.mostafa.alaymiatask.data.remote.dto.ErrorResponse
 import com.mostafa.alaymiatask.data.remote.response.NetworkResponse
+import com.mostafa.alaymiatask.domain.repository.LocationRepository
 import com.mostafa.alaymiatask.domain.usecase.GetPrayTimeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -32,8 +27,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -43,13 +36,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @HiltViewModel
 class PrayViewModel @Inject constructor(
     private val useCase: GetPrayTimeUseCase,
-    private val fusedLocationClient: FusedLocationProviderClient?,
+    private val repository: LocationRepository?,
     private val dataStore: DataStore<Preferences>?,
 ) : ViewModel() {
 
@@ -85,6 +76,8 @@ class PrayViewModel @Inject constructor(
     private val _nextPrayerStateFlow = MutableStateFlow<String>("")
     val nextPrayerStateFlow get() = _nextPrayerStateFlow.asStateFlow()
 
+    private val _locationStateFlow = MutableStateFlow<Location?>(null)
+    val locationStateFlow get() = _locationStateFlow.asStateFlow()
 
     val location: MutableLiveData<Location> = MutableLiveData()
 
@@ -213,72 +206,18 @@ class PrayViewModel @Inject constructor(
 
 
     @SuppressLint("MissingPermission")
-    suspend fun getCurrentLocation(): Location? {
-        return withTimeoutOrNull(5000) {
-            suspendCancellableCoroutine { cont ->
-                fusedLocationClient!!.lastLocation.apply {
-                    if (isComplete) {
-                        if (isSuccessful) {
-                            cont.resume(result)
-                        } else {
-                            cont.resume(null)
-                        }
-                        return@suspendCancellableCoroutine
-                    }
-                    addOnSuccessListener { location ->
-                        cont.resume(location)
-                    }
-                    addOnCanceledListener {
-                        cont.cancel()
-                    }
-                    addOnFailureListener { exception ->
-
-                        viewModelScope.launch {
-                            delay(2000)
-                            getCurrentLocation().let { location ->
-                                cont.resume(location)
-                            }
-                        }
-                    }
-                }
-            }
+    suspend fun getCurrentLocation() {
+        repository!!.getCurrentLocation()?.let { location ->
+            _locationStateFlow.emit(location)
         }
+
     }
 
-//    suspend fun getCurrentLocation(): Location? {
-//        return suspendCancellableCoroutine  { cont ->
-//            val locationCallback = object : LocationCallback() {
-//                override fun onLocationResult(p0: LocationResult) {
-//                    p0?.lastLocation?.let { location ->
-//                        fusedLocationClient!!.removeLocationUpdates(this)
-//                        cont.resume(location)
-//                    }
-//                }
-//
-//                override fun onLocationAvailability(p0: LocationAvailability) {
-//                    if (p0?.isLocationAvailable == false) {
-//                        cont.resume(null)
-//                    }
-//                }
-//            }
-//
-//            val locationRequest = LocationRequest.create().apply {
-//                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-//                numUpdates = 1
-//            }
-//
-//            fusedLocationClient!!.requestLocationUpdates(
-//                locationRequest,
-//                locationCallback,
-//                Looper.getMainLooper()
-//            )
-//
-//            cont.invokeOnCancellation {
-//                fusedLocationClient!!.removeLocationUpdates(locationCallback)
-//            }
-//        }
-//    }
-
+    fun reloadLocation() {
+        viewModelScope.launch {
+            getCurrentLocation()
+        }
+    }
 
     fun getLocationAddress(context: Context, latitude: Double, longitude: Double) {
         viewModelScope.launch {

@@ -5,11 +5,11 @@ import android.content.Context
 import android.location.Geocoder
 import android.location.Location
 import android.os.Build
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -17,6 +17,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationAvailability
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.mostafa.alaymiatask.data.remote.dto.AladhanResponseDTO
 import com.mostafa.alaymiatask.data.remote.dto.ErrorResponse
 import com.mostafa.alaymiatask.data.remote.response.NetworkResponse
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -39,6 +44,7 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @HiltViewModel
 class PrayViewModel @Inject constructor(
@@ -83,7 +89,8 @@ class PrayViewModel @Inject constructor(
     val location: MutableLiveData<Location> = MutableLiveData()
 
     var city: String? = null
-
+    var latitude: Double? = 0.0
+    var longitude: Double? = 0.0
 
     init {
 
@@ -91,6 +98,8 @@ class PrayViewModel @Inject constructor(
         viewModelScope.launch {
             dataStore?.data?.firstOrNull()?.let { preferences ->
                 city = preferences[CITY]
+                latitude = preferences[LATITUDE]
+                longitude = preferences[LONGITUDE]
             }
 
         }
@@ -106,7 +115,6 @@ class PrayViewModel @Inject constructor(
                 year = currentDate.get(Calendar.YEAR)
             )
                 .collect {
-                    //save(latitude, longitude)
                     _prayTime.emit(it)
                 }
         }
@@ -206,34 +214,70 @@ class PrayViewModel @Inject constructor(
 
     @SuppressLint("MissingPermission")
     suspend fun getCurrentLocation(): Location? {
-        return suspendCancellableCoroutine { cont ->
-            fusedLocationClient!!.lastLocation.apply {
-                if (isComplete) {
-                    if (isSuccessful) {
-                        cont.resume(result)
-                    } else {
-                        cont.resume(null)
+        return withTimeoutOrNull(5000) {
+            suspendCancellableCoroutine { cont ->
+                fusedLocationClient!!.lastLocation.apply {
+                    if (isComplete) {
+                        if (isSuccessful) {
+                            cont.resume(result)
+                        } else {
+                            cont.resume(null)
+                        }
+                        return@suspendCancellableCoroutine
                     }
-                    return@suspendCancellableCoroutine
-                }
-                addOnSuccessListener { location ->
-                    cont.resume(location)
-                }
-                addOnCanceledListener {
-                    cont.cancel()
-                }
-                addOnFailureListener { exception ->
-                    // Retry getting the location after a delay
-                    viewModelScope.launch {
-                        delay(2000) // Adjust the delay as needed
-                        getCurrentLocation().let { location ->
-                            cont.resume(location)
+                    addOnSuccessListener { location ->
+                        cont.resume(location)
+                    }
+                    addOnCanceledListener {
+                        cont.cancel()
+                    }
+                    addOnFailureListener { exception ->
+
+                        viewModelScope.launch {
+                            delay(2000)
+                            getCurrentLocation().let { location ->
+                                cont.resume(location)
+                            }
                         }
                     }
                 }
             }
         }
     }
+
+//    suspend fun getCurrentLocation(): Location? {
+//        return suspendCancellableCoroutine  { cont ->
+//            val locationCallback = object : LocationCallback() {
+//                override fun onLocationResult(p0: LocationResult) {
+//                    p0?.lastLocation?.let { location ->
+//                        fusedLocationClient!!.removeLocationUpdates(this)
+//                        cont.resume(location)
+//                    }
+//                }
+//
+//                override fun onLocationAvailability(p0: LocationAvailability) {
+//                    if (p0?.isLocationAvailable == false) {
+//                        cont.resume(null)
+//                    }
+//                }
+//            }
+//
+//            val locationRequest = LocationRequest.create().apply {
+//                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+//                numUpdates = 1
+//            }
+//
+//            fusedLocationClient!!.requestLocationUpdates(
+//                locationRequest,
+//                locationCallback,
+//                Looper.getMainLooper()
+//            )
+//
+//            cont.invokeOnCancellation {
+//                fusedLocationClient!!.removeLocationUpdates(locationCallback)
+//            }
+//        }
+//    }
 
 
     fun getLocationAddress(context: Context, latitude: Double, longitude: Double) {

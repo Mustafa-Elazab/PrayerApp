@@ -15,15 +15,20 @@ import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatImageView
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.mostafa.alaymiatask.R
 import com.mostafa.alaymiatask.di.NetworkUtils
 import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.api.PrayViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -57,7 +62,16 @@ class HomeActivity : AppCompatActivity() {
             }
 
             if (isGranted) {
-                checkGpsStatus()
+                if (networkUtils.isNetworkConnected()) {
+                    checkGpsStatus()
+                } else {
+                    lifecycleScope.launch {
+                        viewModel.fetchPrayTime(
+                            latitude = 0.0,
+                            longitude = 0.0
+                        )
+                    }
+                }
 
             } else {
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
@@ -68,31 +82,80 @@ class HomeActivity : AppCompatActivity() {
     }
 
 
+//    private fun checkGpsStatus()
+//    {
+//        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+//            lifecycleScope.launch {
+//                repeatOnLifecycle(Lifecycle.State.STARTED) {
+//                    while (isActive) {
+//                        viewModel.getCurrentLocation().let { location ->
+//                            if (location != null) {
+//                                viewModel.fetchPrayTime(
+//                                    latitude = location.latitude,
+//                                    longitude = location.longitude
+//                                )
+//
+//                                viewModel.getLocationAddress(
+//                                    this@HomeActivity,
+//                                    latitude = location.latitude,
+//                                    longitude = location.longitude
+//                                )
+//
+//                            } else {
+//                                delay(5000)
+//                                Log.d(TAG, "checkGpsStatus: $location")
+//                            }
+//
+//                        }
+//                    }
+//
+//                }
+//            }
+//        } else {
+//            buildAlertMessageNoGps()
+//        }
+//
+//
+//    }
+
     private fun checkGpsStatus() {
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            lifecycleScope.launch {
-                viewModel.getCurrentLocation().let { location ->
-                    if (location != null) {
+            lifecycleScope.launchWhenResumed {
+                while (isActive) {
+                    viewModel.getCurrentLocation()?.let { location ->
                         viewModel.fetchPrayTime(
                             latitude = location.latitude,
                             longitude = location.longitude
                         )
-                        if (networkUtils.isNetworkConnected()) {
-                            viewModel.getLocationAddress(
-                                this@HomeActivity,
-                                latitude = location.latitude,
-                                longitude = location.longitude
-                            )
-                        }
-                    } else {
-                        Log.d(TAG, "checkGpsStatus: Faild To Getting Location")
-                    }
 
+                        viewModel.getLocationAddress(
+                            this@HomeActivity,
+                            latitude = location.latitude,
+                            longitude = location.longitude
+                        )
+
+                    } ?: run {
+                        delay(5000)
+                        Log.d(TAG, "checkGpsStatus: Location is null")
+                    }
                 }
             }
         } else {
-            showAlertOpenGps()
+            buildAlertMessageNoGps()
         }
+    }
+
+    fun buildAlertMessageNoGps() {
+        val builder = AlertDialog.Builder(this)
+        builder.setMessage(getString(R.string.enableGPS))
+            .setIcon(R.drawable.ic_location)
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.enable)) { _, _ ->
+                val enableGpsIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivity(enableGpsIntent)
+            }
+        val alert: AlertDialog = builder.create()
+        alert.show()
     }
 
 
@@ -101,7 +164,8 @@ class HomeActivity : AppCompatActivity() {
             .setTitle("GPS is disabled")
             .setMessage("Please enable GPS to get your location")
             .setIcon(R.drawable.ic_location)
-            .setPositiveButton("Open GPS") { dialog, _ ->
+            .setCancelable(false)
+            .setPositiveButton(R.string.enable) { dialog, _ ->
                 dialog.dismiss()
                 val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                 startActivity(intent)
@@ -147,32 +211,6 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            lifecycleScope.launch {
-                viewModel.getCurrentLocation().let { location ->
-                    if (location != null) {
-                        viewModel.fetchPrayTime(
-                            latitude = location.latitude,
-                            longitude = location.longitude
-                        )
-                        if (networkUtils.isNetworkConnected()) {
-                            viewModel.getLocationAddress(
-                                this@HomeActivity,
-                                latitude = location.latitude,
-                                longitude = location.longitude
-                            )
-                        }
-                    } else {
-                        Log.d(TAG, "checkGpsStatus: Faild To Getting Location")
-                    }
-
-                }
-            }
-        } else {
-            showAlertOpenGps()
-        }
-
-
     }
 
 

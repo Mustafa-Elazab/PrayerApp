@@ -23,7 +23,6 @@ class LocationRepositoryImpl @Inject constructor(
 ) : LocationRepository {
 
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getCurrentLocation(): Location? {
         val hasAccessFineLocation = ContextCompat.checkSelfPermission(
             application, Manifest.permission.ACCESS_FINE_LOCATION
@@ -33,44 +32,30 @@ class LocationRepositoryImpl @Inject constructor(
             application, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
-        val locationManager =
-            application.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ||
-                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-
-        if (!hasAccessCoarseLocation && !hasAccessFineLocation && !isGpsEnabled) {
-            Log.d("TAG", "getCurrentLocation: NO")
+        if (!hasAccessCoarseLocation && !hasAccessFineLocation) {
+            Log.d("TAG", "getCurrentLocation: No permissions")
+            return null
         }
 
-        return suspendCancellableCoroutine { cont ->
-            fusedLocationProviderClient.lastLocation.apply {
-                if (isComplete) {
-                    if (isSuccessful) {
-                        cont.resume(result) {
+        val locationManager = application.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val providers: List<String> = locationManager.getProviders(true)
 
-                        }
-                    } else {
-                        cont.resume(null) {
+        var location: Location? = null
 
-                        }
-                    }
-                    return@suspendCancellableCoroutine
+        for (provider in providers) {
+            try {
+                val lastKnownLocation = locationManager.getLastKnownLocation(provider)
+                if (lastKnownLocation != null && (location == null || lastKnownLocation.accuracy < location.accuracy)) {
+                    location = lastKnownLocation
                 }
-                addOnSuccessListener {
-                    cont.resume(it) {
-
-                    }
-                }
-                addOnCanceledListener {
-                    cont.cancel()
-                }
-                addOnFailureListener {
-                    cont.resume(null) {}
-
-                }
+            } catch (e: SecurityException) {
+                Log.e("TAG", "getCurrentLocation: SecurityException", e)
             }
         }
+
+        return location
     }
+
 
 
 }

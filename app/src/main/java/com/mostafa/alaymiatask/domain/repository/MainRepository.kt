@@ -20,4 +20,6 @@ interface MainRepository {
         latitude: Double?,
         longitude: Double?,
     ): Flow<NetworkResponse<QiblaResponseDTO, ErrorResponse>>
+
+
 }

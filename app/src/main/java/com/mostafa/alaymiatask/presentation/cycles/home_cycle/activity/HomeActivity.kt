@@ -1,11 +1,13 @@
 package com.mostafa.alaymiatask.presentation.cycles.home_cycle.activity
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
@@ -20,12 +22,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.mostafa.alaymiatask.R
 import com.mostafa.alaymiatask.di.NetworkUtils
 import com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.pray.PrayViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -51,9 +55,6 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
 
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && networkUtils.isNetworkConnected()) {
-            viewModel.reloadLocation()
-        }
 
         permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
@@ -84,27 +85,69 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private fun getUserLocation() {
+        val mFusedLocationProviderClient =
+            LocationServices.getFusedLocationProviderClient(this)
+        mFusedLocationProviderClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    updateUserLocation(location)
+                    updateUserCountry(location)
+                    Log.d(TAG, "getUserLocation: location not equal null")
+                } else {
+                    Log.d(TAG, "getUserLocation: location equal null")
+                    val locationRequest = LocationRequest.create()
+                    locationRequest.apply {
+                        interval = 10000
+                        fastestInterval = 5000
+                        priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+                    }
+
+                    val locationCallback = object : LocationCallback() {
+                        override fun onLocationResult(locationResult: LocationResult) {
+                            super.onLocationResult(locationResult)
+                            locationResult.lastLocation.let {
+                                updateUserLocation(it)
+                                updateUserCountry(it)
+                                Log.d(TAG, "getUserLocation: location request success")
+                            }
+                        }
+                    }
+
+                    mFusedLocationProviderClient.requestLocationUpdates(
+                        locationRequest,
+                        locationCallback,
+                        null
+                    )
+                }
+            }
+    }
+
+    private fun updateUserCountry(location: Location?) {
+        try {
+
+            viewModel.getLocationAddress(
+                this,
+                longitude = location!!.longitude,
+                latitude = location.latitude
+            )
+        } catch (e: Exception) {
+            Log.d(TAG, "getUserCity: " + e.message)
+        }
+    }
+
+    private fun updateUserLocation(location: Location?) {
+        viewModel.fetchPrayTime(
+            latitude = location!!.latitude,
+            longitude = location.longitude
+        )
+    }
 
     private fun checkGpsStatus() {
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             lifecycleScope.launchWhenResumed {
-                viewModel.getCurrentLocation()
-                viewModel.locationStateFlow.collectLatest { location ->
-                    if (location != null) {
-                        viewModel.fetchPrayTime(
-                            latitude = location!!.latitude,
-                            longitude = location.longitude
-                        )
-                        viewModel.getLocationAddress(
-                            this@HomeActivity,
-                            latitude = location.latitude,
-                            longitude = location.longitude
-                        )
-                    } else {
-                        delay(5000)
-                        Log.d(TAG, "checkGpsStatus: Location is null")
-                    }
-                }
+                getUserLocation()
             }
         } else {
             buildAlertMessageNoGps()
@@ -161,6 +204,10 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && networkUtils.isNetworkConnected()) {
+            viewModel.reloadLocation()
+        }
+
     }
 
 

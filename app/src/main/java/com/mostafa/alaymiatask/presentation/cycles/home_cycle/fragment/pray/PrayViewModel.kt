@@ -1,6 +1,7 @@
 package com.mostafa.alaymiatask.presentation.cycles.home_cycle.fragment.pray
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.content.Context
 import android.location.Geocoder
 import android.location.Location
@@ -12,12 +13,16 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.mostafa.alaymiatask.data.remote.dto.AladhanResponseDTO
 import com.mostafa.alaymiatask.data.remote.dto.ErrorResponse
 import com.mostafa.alaymiatask.data.remote.response.NetworkResponse
+import com.mostafa.alaymiatask.domain.reminder.AzanWorker
 import com.mostafa.alaymiatask.domain.repository.LocationRepository
 import com.mostafa.alaymiatask.domain.usecase.GetPrayTimeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,7 +47,8 @@ class PrayViewModel @Inject constructor(
     private val useCase: GetPrayTimeUseCase,
     private val repository: LocationRepository?,
     private val dataStore: DataStore<Preferences>?,
-) : ViewModel() {
+    private val app: Application
+) : AndroidViewModel(app) {
 
 
     private val _prayTime =
@@ -140,7 +146,6 @@ class PrayViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun timeStringToMillis(time: String): Long {
-
         val timePattern = """\d{2}:\d{2}""".toRegex()
         val matchResult = timePattern.find(time)
         val prayerTime = matchResult?.value
@@ -170,14 +175,39 @@ class PrayViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun getNextPrayer(prayerTimesInMillis: List<Long>) {
         val currentTime = LocalDateTime.now().withNano(0).toInstant(ZoneOffset.UTC).toEpochMilli()
-        Log.d("TAG", "getNextPrayer: ${currentTime}")
         val nextPrayerTime = prayerTimesInMillis.firstOrNull { it > currentTime }
             ?: prayerTimesInMillis.firstOrNull()
         val nextPrayerIndex = prayerTimesInMillis.indexOf(nextPrayerTime)
         val timeDifference = nextPrayerTime?.minus(currentTime) ?: 0L
         val prayerNames = listOf("Fajr", "SunRise", "Dhuhr", "Asr", "Maghrib", "Isha")
         val nextPrayer = prayerNames.getOrNull(nextPrayerIndex) ?: "Fajr"
+
+
+        val prayerTimesInMillis = listOf(
+            prayerTimesInMillis[0],
+            prayerTimesInMillis[2],
+            prayerTimesInMillis[3],
+            prayerTimesInMillis[4],
+            prayerTimesInMillis[5],
+        )
+
+        val inputData = Data.Builder()
+            .putLongArray(AzanWorker.KEY_PRAYER_TIMES_IN_MILLIS, prayerTimesInMillis.toLongArray())
+            .build()
+
+        val workRequest = OneTimeWorkRequestBuilder<AzanWorker>()
+            .setInputData(inputData)
+            .build()
+
+        WorkManager.getInstance(app).enqueue(workRequest)
+
+
+
+
+
+
         _nextPrayerStateFlow.value = nextPrayer
+
         startCountdown(durationMillis = timeDifference)
 
     }
@@ -196,6 +226,7 @@ class PrayViewModel @Inject constructor(
             _remainingTime.emit("00:00")   // Countdown finished
         }
     }
+
 
     private fun formatTime(timeMillis: Long): String {
         val hours = (timeMillis / (1000 * 60 * 60)) % 24
